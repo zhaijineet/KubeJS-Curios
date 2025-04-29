@@ -3,10 +3,12 @@ package net.zhaiji.kubejscurios.curios;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import dev.latvian.mods.kubejs.item.ItemBuilder;
+import dev.latvian.mods.kubejs.item.ItemModificationKubeEvent;
 import dev.latvian.mods.rhino.util.HideFromJS;
+import net.minecraft.core.Holder;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.damagesource.DamageSource;
-import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.monster.EnderMan;
@@ -14,6 +16,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.storage.loot.LootContext;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import top.theillusivec4.curios.api.CuriosApi;
 import top.theillusivec4.curios.api.SlotContext;
 import top.theillusivec4.curios.api.type.capability.ICurio;
@@ -22,9 +25,7 @@ import top.theillusivec4.curios.api.type.capability.ICurioItem;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 
@@ -34,11 +35,11 @@ public class CapabilityCurios {
     private EquipConsumer onUnequip;
     private BiPredicate<SlotContext,ItemStack> canEquip;
     private BiPredicate<SlotContext,ItemStack> canUnequip;
-    private BiFunction<List<Component>, ItemStack, List<Component>> slotsTooltip;
-    private final Multimap<Attribute, AttributeModifier> modifiers = HashMultimap.create();
-    private Consumer<AttributeModificationContext> dynamicAttribute;
+    private SlotsTooltipFunction slotsTooltip;
+    private final Multimap<Holder<Attribute>, AttributeModifier> modifiers = HashMultimap.create();
+    private Consumer<AttributeModificationContext> modifyAttribute;
     private DropRulePredicate canDrop;
-    private BiFunction<List<Component>, ItemStack, List<Component>> attributesTooltip;
+    private AttributesTooltipFunction attributesTooltip;
     private FortuneFunction fortuneLevel;
     private LootingFunction lootingLevel;
     private BiPredicate<SlotContext, ItemStack> makesPiglinsNeutral;
@@ -51,8 +52,18 @@ public class CapabilityCurios {
     }
 
     @FunctionalInterface
+    public interface SlotsTooltipFunction {
+        List<Component> apply(List<Component> tooltips, Item.TooltipContext context, ItemStack stack);
+    }
+
+    @FunctionalInterface
     public interface DropRulePredicate {
-        boolean test(SlotContext slotContext, DamageSource source, int lootingLevel, boolean recentlyHit, ItemStack stack);
+        boolean test(SlotContext slotContext, DamageSource source, boolean recentlyHit, ItemStack stack);
+    }
+
+    @FunctionalInterface
+    public interface AttributesTooltipFunction{
+        List<Component> apply(List<Component> tooltips, Item.TooltipContext context, ItemStack stack);
     }
 
     @FunctionalInterface
@@ -62,7 +73,7 @@ public class CapabilityCurios {
 
     @FunctionalInterface
     public interface LootingFunction {
-        int apply(SlotContext slotContext, DamageSource source, LivingEntity target, int baseLooting, ItemStack stack);
+        int apply(SlotContext slotContext, @Nullable LootContext lootContext, ItemStack stack);
     }
 
     @FunctionalInterface
@@ -95,18 +106,18 @@ public class CapabilityCurios {
         return this;
     }
 
-    public CapabilityCurios modifySlotsTooltip(BiFunction<List<Component>, ItemStack, List<Component>> slotsTooltip) {
+    public CapabilityCurios modifySlotsTooltip(SlotsTooltipFunction slotsTooltip) {
         this.slotsTooltip = slotsTooltip;
         return this;
     }
 
-    public CapabilityCurios addAttribute(Attribute attribute, String identifier, double amount, AttributeModifier.Operation operation) {
-        this.modifiers.put(attribute, new AttributeModifier(new UUID(identifier.hashCode(), identifier.hashCode()), identifier, amount, operation));
+    public CapabilityCurios addAttribute(Holder<Attribute> attribute, ResourceLocation identifier, double amount, AttributeModifier.Operation operation) {
+        this.modifiers.put(attribute, new AttributeModifier(identifier, amount, operation));
         return this;
     }
 
-    public CapabilityCurios modifyAttribute(Consumer<AttributeModificationContext> dynamicAttribute) {
-        this.dynamicAttribute = dynamicAttribute;
+    public CapabilityCurios modifyAttribute(Consumer<AttributeModificationContext> modifyAttribute) {
+        this.modifyAttribute = modifyAttribute;
         return this;
     }
 
@@ -115,7 +126,7 @@ public class CapabilityCurios {
         return this;
     }
 
-    public CapabilityCurios modifyAttributesTooltip(BiFunction<List<Component>, ItemStack, List<Component>> attributesTooltip) {
+    public CapabilityCurios modifyAttributesTooltip(AttributesTooltipFunction attributesTooltip) {
         this.attributesTooltip = attributesTooltip;
         return this;
     }
@@ -192,23 +203,23 @@ public class CapabilityCurios {
             }
 
             @Override
-            public List<Component> getSlotsTooltip(List<Component> tooltips, ItemStack stack) {
+            public List<Component> getSlotsTooltip(List<Component> tooltips, Item.TooltipContext context, ItemStack stack) {
                 if (slotsTooltip != null) {
-                    return slotsTooltip.apply(tooltips, stack);
+                    return slotsTooltip.apply(tooltips, context, stack);
                 }
-                return ICurioItem.super.getSlotsTooltip(tooltips, stack);
+                return ICurioItem.super.getSlotsTooltip(tooltips, context, stack);
             }
 
             @Override
-            public Multimap<Attribute, AttributeModifier> getAttributeModifiers(SlotContext slotContext, UUID uuid, ItemStack stack) {
-                Multimap<Attribute, AttributeModifier> tempModifiers = HashMultimap.create(modifiers);
-                if (dynamicAttribute != null) {
-                    dynamicAttribute.accept(new AttributeModificationContext(slotContext, uuid, stack, tempModifiers));
+            public Multimap<Holder<Attribute>, AttributeModifier> getAttributeModifiers(SlotContext slotContext, ResourceLocation identifier, ItemStack stack) {
+                Multimap<Holder<Attribute>, AttributeModifier> tempModifiers = HashMultimap.create(modifiers);
+                if (modifyAttribute != null) {
+                    modifyAttribute.accept(new AttributeModificationContext(slotContext, identifier, stack, tempModifiers));
                 }
                 if (!tempModifiers.isEmpty()) {
                     return tempModifiers;
                 }
-                return ICurioItem.super.getAttributeModifiers(slotContext, uuid, stack);
+                return ICurioItem.super.getAttributeModifiers(slotContext, identifier, stack);
             }
 
             @Override
@@ -218,19 +229,19 @@ public class CapabilityCurios {
 
             @NotNull
             @Override
-            public ICurio.DropRule getDropRule(SlotContext slotContext, DamageSource source, int lootingLevel, boolean recentlyHit, ItemStack stack) {
+            public ICurio.DropRule getDropRule(SlotContext slotContext, DamageSource source, boolean recentlyHit, ItemStack stack) {
                 if (canDrop != null) {
-                    return canDrop.test(slotContext, source, lootingLevel, recentlyHit, stack) ? ICurio.DropRule.ALWAYS_DROP : ICurio.DropRule.ALWAYS_KEEP;
+                    return canDrop.test(slotContext, source, recentlyHit, stack) ? ICurio.DropRule.ALWAYS_DROP : ICurio.DropRule.ALWAYS_KEEP;
                 }
-                return ICurioItem.super.getDropRule(slotContext, source, lootingLevel, recentlyHit, stack);
+                return ICurioItem.super.getDropRule(slotContext, source, recentlyHit, stack);
             }
 
             @Override
-            public List<Component> getAttributesTooltip(List<Component> tooltips, ItemStack stack) {
+            public List<Component> getAttributesTooltip(List<Component> tooltips, Item.TooltipContext context, ItemStack stack) {
                 if (attributesTooltip != null) {
-                    return attributesTooltip.apply(tooltips, stack);
+                    return attributesTooltip.apply(tooltips, context, stack);
                 }
-                return ICurioItem.super.getAttributesTooltip(tooltips, stack);
+                return ICurioItem.super.getAttributesTooltip(tooltips, context, stack);
             }
 
             @Override
@@ -242,11 +253,11 @@ public class CapabilityCurios {
             }
 
             @Override
-            public int getLootingLevel(SlotContext slotContext, DamageSource source, LivingEntity target, int baseLooting, ItemStack stack) {
+            public int getLootingLevel(SlotContext slotContext, @Nullable LootContext lootContext, ItemStack stack) {
                 if (lootingLevel != null) {
-                    return lootingLevel.apply(slotContext, source, target, baseLooting, stack);
+                    return lootingLevel.apply(slotContext, lootContext, stack);
                 }
-                return ICurioItem.super.getLootingLevel(slotContext, source, target, baseLooting, stack);
+                return ICurioItem.super.getLootingLevel(slotContext, lootContext, stack);
             }
 
             @Override
@@ -277,40 +288,40 @@ public class CapabilityCurios {
 
     public static class AttributeModificationContext {
         private final SlotContext slotContext;
-        private final UUID uuid;
+        private final ResourceLocation identifier;
         private final ItemStack stack;
-        private final Multimap<Attribute, AttributeModifier> modifiers;
+        private final Multimap<Holder<Attribute>, AttributeModifier> modifiers;
 
         public SlotContext getSlotContext() {
             return slotContext;
         }
 
-        public UUID getUUID() {
-            return uuid;
+        public ResourceLocation getIdentifier() {
+            return identifier;
         }
 
         public ItemStack getStack() {
             return stack;
         }
 
-        public Multimap<Attribute, AttributeModifier> getModifiers() {
+        public Multimap<Holder<Attribute>, AttributeModifier> getModifiers() {
             return modifiers;
         }
 
-        public AttributeModificationContext(SlotContext slotContext, UUID uuid, ItemStack stack, Multimap<Attribute, AttributeModifier> modifiers) {
+        public AttributeModificationContext(SlotContext slotContext, ResourceLocation identifier, ItemStack stack, Multimap<Holder<Attribute>, AttributeModifier> modifiers) {
             this.slotContext = slotContext;
-            this.uuid = uuid;
+            this.identifier = identifier;
             this.stack = stack;
             this.modifiers = modifiers;
         }
 
-        public AttributeModificationContext modify(Attribute attribute, String identifier, double amount, AttributeModifier.Operation operation) {
-            this.modifiers.put(attribute, new AttributeModifier(new UUID(identifier.hashCode(), identifier.hashCode()), identifier, amount, operation));
+        public AttributeModificationContext modify(Holder<Attribute> attribute, ResourceLocation identifier, double amount, AttributeModifier.Operation operation) {
+            this.modifiers.put(attribute, new AttributeModifier(identifier, amount, operation));
             return this;
         }
 
-        public AttributeModificationContext remove(Attribute attribute, String identifier) {
-            this.modifiers.get(attribute).removeIf(modifier -> modifier.getName().equals(identifier));
+        public AttributeModificationContext remove(Holder<Attribute> attribute, ResourceLocation identifier) {
+            this.modifiers.get(attribute).removeIf(modifier -> modifier.id().equals(identifier));
             return this;
         }
     }
@@ -318,15 +329,15 @@ public class CapabilityCurios {
     public static class CuriosCapabilityBuilder {
         public static CuriosCapabilityBuilder INSTANCE = new CuriosCapabilityBuilder();
         public static final Map<ItemBuilder, ICurioItem> itemBuilders = new HashMap<>();
-        public static final Map<Item, ICurioItem> items = new HashMap<>();
+        public static final Map<ItemModificationKubeEvent.ItemModifications, ICurioItem> itemModifications = new HashMap<>();
 
         public static void load() {
             itemBuilders.forEach((itemBuilder, iCurioItem) -> {
                 CuriosApi.registerCurio(itemBuilder.get(), iCurioItem);
             });
 
-            items.forEach((item, iCurioItem) -> {
-                CuriosApi.registerCurio(item, iCurioItem);
+            itemModifications.forEach((itemModification, iCurioItem) -> {
+                CuriosApi.registerCurio(itemModification.item(), iCurioItem);
             });
         }
 
