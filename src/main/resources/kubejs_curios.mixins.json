@@ -1,0 +1,20 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "net.zhaiji.kubejscurios.mixin",
+  "compatibilityLevel": "JAVA_8",
+  "refmap": "kubejs_curios.refmap.json",
+  "mixins": [
+    "CuriosRendererRegistryAccessor",
+    "ItemBuilderMixin",
+    "ItemMixin",
+    "KubeJSClientMixin",
+    "LivingEntityMixin",
+    "UtilsJSMixin"
+  ],
+  "client": [
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

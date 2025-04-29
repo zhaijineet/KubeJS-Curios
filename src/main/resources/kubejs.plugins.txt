@@ -1,0 +1,1 @@
+net.zhaiji.kubejscurios.kubejs.KubeJSCuriosPlugin
