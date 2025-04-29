@@ -1,12 +1,12 @@
 package net.zhaiji.kubejscurios.curios;
 
 import com.google.common.collect.Multimap;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.common.util.LazyOptional;
-import net.minecraftforge.items.IItemHandlerModifiable;
+import net.neoforged.neoforge.items.IItemHandlerModifiable;
 import top.theillusivec4.curios.api.CuriosApi;
 import top.theillusivec4.curios.api.SlotResult;
 import top.theillusivec4.curios.api.type.ISlotType;
@@ -17,7 +17,6 @@ import top.theillusivec4.curios.api.type.inventory.ICurioStacksHandler;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.function.Predicate;
 
 public interface KubeJSCuriosHelper {
@@ -33,7 +32,7 @@ public interface KubeJSCuriosHelper {
         return CuriosApi.getEntitySlots((LivingEntity) this);
     }
 
-    default LazyOptional<ICurio> getCurioCapability(ItemStack stack) {
+    default Optional<ICurio> getCurioCapability(ItemStack stack) {
         return CuriosApi.getCurio(stack);
     }
 
@@ -93,12 +92,12 @@ public interface KubeJSCuriosHelper {
         return this.getCuriosInventory().findCurio(slot, index);
     }
 
-    default void addCuriosSlotModifier(String slot, UUID uuid, String identifier, double amount, AttributeModifier.Operation operation) {
-        this.getCuriosInventory().addPermanentSlotModifier(slot, new UUID(identifier.hashCode(), identifier.hashCode()), identifier, amount, operation);
+    default void addCuriosSlotModifier(String slot, ResourceLocation identifier, double amount, AttributeModifier.Operation operation) {
+        this.getCuriosInventory().addPermanentSlotModifier(slot, identifier, amount, operation);
     }
 
-    default void removeCuriosSlotModifier(String slot, String identifier) {
-        this.getCuriosInventory().removeSlotModifier(slot, new UUID(identifier.hashCode(), identifier.hashCode()));
+    default void removeCuriosSlotModifier(String slot, ResourceLocation identifier) {
+        this.getCuriosInventory().removeSlotModifier(slot, identifier);
     }
 
     default void clearCuriosSlotModifiers() {

@@ -11,7 +11,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(value = KubeJSClient.class, remap = false)
 public class KubeJSClientMixin {
     @Inject(method = "reloadClientScripts", at = @At("RETURN"))
-    private static void CuriosJS$reloadClientScripts(CallbackInfo ci) {
+    private static void KubeJSCurios$reloadClientScripts(CallbackInfo ci) {
         if (Minecraft.getInstance().player != null) {
             KubeJSCuriosEventJS.loadRegister();
         }

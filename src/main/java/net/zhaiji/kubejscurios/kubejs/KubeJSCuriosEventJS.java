@@ -1,6 +1,6 @@
 package net.zhaiji.kubejscurios.kubejs;
 
-import dev.latvian.mods.kubejs.client.ClientInitEventJS;
+import dev.latvian.mods.kubejs.client.ClientKubeEvent;
 import net.minecraft.world.item.Item;
 import net.zhaiji.kubejscurios.curios.CurioRenderer;
 import net.zhaiji.kubejscurios.mixin.CuriosRendererRegistryAccessor;
@@ -22,7 +22,7 @@ public class KubeJSCuriosEventJS {
         CuriosRendererRegistry.load();
     }
 
-    public static class registerRenderer extends ClientInitEventJS {
+    public static class registerRenderer implements ClientKubeEvent {
         public void register(Item item, Consumer<CurioRenderer.RenderContext> renderer) {
             CuriosRendererRegistry.register(item, () -> new CurioRenderer(renderer));
         }
