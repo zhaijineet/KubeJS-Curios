@@ -120,12 +120,12 @@ public class CapabilityCurios {
         return this;
     }
 
-    public CapabilityCurios setFortuneLevel(FortuneFunction fortuneLevel) {
+    public CapabilityCurios modifyFortuneLevel(FortuneFunction fortuneLevel) {
         this.fortuneLevel = fortuneLevel;
         return this;
     }
 
-    public CapabilityCurios setLootingLevel(LootingFunction lootingLevel) {
+    public CapabilityCurios modifyLootingLevel(LootingFunction lootingLevel) {
         this.lootingLevel = lootingLevel;
         return this;
     }
