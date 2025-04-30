@@ -7,6 +7,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import top.theillusivec4.curios.api.client.CuriosRendererRegistry;
 
 @Mixin(value = KubeJSClient.class, remap = false)
 public class KubeJSClientMixin {
@@ -15,5 +16,6 @@ public class KubeJSClientMixin {
         if (Minecraft.getInstance().player != null) {
             KubeJSCuriosEventJS.loadRegister();
         }
+        CuriosRendererRegistry.load();
     }
 }

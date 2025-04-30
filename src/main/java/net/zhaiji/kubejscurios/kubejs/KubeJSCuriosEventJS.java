@@ -19,7 +19,6 @@ public class KubeJSCuriosEventJS {
         CuriosRendererRegistryAccessor.getRendererRegistry().putAll(RENDERER_REGISTRY);
         KubeJSCuriosEvents.REGISTER_RENDERER.post(new registerRenderer());
         CuriosRendererRegistryAccessor.getRenderers().clear();
-        CuriosRendererRegistry.load();
     }
 
     public static class registerRenderer implements ClientKubeEvent {

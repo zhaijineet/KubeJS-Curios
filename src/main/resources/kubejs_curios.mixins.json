@@ -5,6 +5,12 @@
   "compatibilityLevel": "JAVA_8",
   "refmap": "kubejs_curios.refmap.json",
   "mixins": [
+    "CuriosRendererRegistryAccessor",
+    "ItemBuilderMixin",
+    "ItemModificationsMixin",
+    "KubeJSClientMixin",
+    "LivingEntityMixin",
+    "UtilsJSMixin"
   ],
   "client": [
   ],
