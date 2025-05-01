@@ -36,7 +36,7 @@ public class CapabilityCurios {
     private BiPredicate<SlotContext,ItemStack> canUnequip;
     private BiFunction<List<Component>, ItemStack, List<Component>> slotsTooltip;
     private final Multimap<Attribute, AttributeModifier> modifiers = HashMultimap.create();
-    private Consumer<AttributeModificationContext> dynamicAttribute;
+    private Consumer<AttributeModificationContext> modifyAttribute;
     private DropRulePredicate canDrop;
     private BiFunction<List<Component>, ItemStack, List<Component>> attributesTooltip;
     private FortuneFunction fortuneLevel;
@@ -105,8 +105,8 @@ public class CapabilityCurios {
         return this;
     }
 
-    public CapabilityCurios modifyAttribute(Consumer<AttributeModificationContext> dynamicAttribute) {
-        this.dynamicAttribute = dynamicAttribute;
+    public CapabilityCurios modifyAttribute(Consumer<AttributeModificationContext> modifyAttribute) {
+        this.modifyAttribute = modifyAttribute;
         return this;
     }
 
@@ -202,8 +202,8 @@ public class CapabilityCurios {
             @Override
             public Multimap<Attribute, AttributeModifier> getAttributeModifiers(SlotContext slotContext, UUID uuid, ItemStack stack) {
                 Multimap<Attribute, AttributeModifier> tempModifiers = HashMultimap.create(modifiers);
-                if (dynamicAttribute != null) {
-                    dynamicAttribute.accept(new AttributeModificationContext(slotContext, uuid, stack, tempModifiers));
+                if (modifyAttribute != null) {
+                    modifyAttribute.accept(new AttributeModificationContext(slotContext, uuid, stack, tempModifiers));
                 }
                 if (!tempModifiers.isEmpty()) {
                     return tempModifiers;
