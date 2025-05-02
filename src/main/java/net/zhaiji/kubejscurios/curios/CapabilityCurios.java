@@ -37,17 +37,20 @@ public class CapabilityCurios {
     private BiFunction<List<Component>, ItemStack, List<Component>> slotsTooltip;
     private final Multimap<Attribute, AttributeModifier> modifiers = HashMultimap.create();
     private Consumer<AttributeModificationContext> modifyAttribute;
+    private BiConsumer<SlotContext, ItemStack> onEquipFromUse;
+    private BiFunction<SlotContext, ItemStack, ICurio.SoundInfo> modifyEquipSound;
+    private BiPredicate<SlotContext, ItemStack> canEquipFromUse;
     private DropRulePredicate canDrop;
     private BiFunction<List<Component>, ItemStack, List<Component>> attributesTooltip;
-    private FortuneFunction fortuneLevel;
-    private LootingFunction lootingLevel;
+    private FortuneFunction modifyFortuneLevel;
+    private LootingFunction modifyLootingLevel;
     private BiPredicate<SlotContext, ItemStack> makesPiglinsNeutral;
     private BiPredicate<SlotContext, ItemStack> canWalkOnPowderedSnow;
     private EnderMaskPredicate isEnderMask;
 
     @FunctionalInterface
     public interface EquipConsumer {
-        void accept(SlotContext slotContext, ItemStack itemStack1, ItemStack itemStack2);
+        void accept(SlotContext slotContext, ItemStack oldStack, ItemStack newStack);
     }
 
     @FunctionalInterface
@@ -110,6 +113,21 @@ public class CapabilityCurios {
         return this;
     }
 
+    public CapabilityCurios onEquipFromUse(BiConsumer<SlotContext, ItemStack> onEquipFromUse) {
+        this.onEquipFromUse = onEquipFromUse;
+        return this;
+    }
+
+    public CapabilityCurios modifyEquipSound(BiFunction<SlotContext, ItemStack, ICurio.SoundInfo> modifyEquipSound) {
+        this.modifyEquipSound = modifyEquipSound;
+        return this;
+    }
+
+    public CapabilityCurios canEquipFromUse(BiPredicate<SlotContext, ItemStack> canEquipFromUse) {
+        this.canEquipFromUse = canEquipFromUse;
+        return this;
+    }
+
     public CapabilityCurios canDrop(DropRulePredicate canDrop) {
         this.canDrop = canDrop;
         return this;
@@ -120,13 +138,13 @@ public class CapabilityCurios {
         return this;
     }
 
-    public CapabilityCurios modifyFortuneLevel(FortuneFunction fortuneLevel) {
-        this.fortuneLevel = fortuneLevel;
+    public CapabilityCurios modifyFortuneLevel(FortuneFunction modifyFortuneLevel) {
+        this.modifyFortuneLevel = modifyFortuneLevel;
         return this;
     }
 
-    public CapabilityCurios modifyLootingLevel(LootingFunction lootingLevel) {
-        this.lootingLevel = lootingLevel;
+    public CapabilityCurios modifyLootingLevel(LootingFunction modifyLootingLevel) {
+        this.modifyLootingLevel = modifyLootingLevel;
         return this;
     }
 
@@ -169,7 +187,7 @@ public class CapabilityCurios {
             @Override
             public void onUnequip(SlotContext slotContext, ItemStack newStack, ItemStack stack) {
                 if (onUnequip != null) {
-                    onUnequip.accept(slotContext, newStack, stack);
+                    onUnequip.accept(slotContext, stack, newStack);
                 } else {
                     ICurioItem.super.onUnequip(slotContext, newStack, stack);
                 }
@@ -212,7 +230,28 @@ public class CapabilityCurios {
             }
 
             @Override
+            public void onEquipFromUse(SlotContext slotContext, ItemStack stack) {
+                if (onEquipFromUse != null) {
+                    onEquipFromUse.accept(slotContext, stack);
+                } else {
+                    ICurioItem.super.onEquipFromUse(slotContext, stack);
+                }
+            }
+
+            @NotNull
+            @Override
+            public ICurio.SoundInfo getEquipSound(SlotContext slotContext, ItemStack stack) {
+                if (modifyEquipSound != null) {
+                    return modifyEquipSound.apply(slotContext, stack);
+                }
+                return ICurioItem.super.getEquipSound(slotContext, stack);
+            }
+
+            @Override
             public boolean canEquipFromUse(SlotContext slotContext, ItemStack stack) {
+                if (canEquipFromUse != null) {
+                    return canEquipFromUse.test(slotContext, stack);
+                }
                 return true;
             }
 
@@ -235,16 +274,16 @@ public class CapabilityCurios {
 
             @Override
             public int getFortuneLevel(SlotContext slotContext, LootContext lootContext, ItemStack stack) {
-                if (fortuneLevel != null) {
-                    return fortuneLevel.apply(slotContext, lootContext, stack);
+                if (modifyFortuneLevel != null) {
+                    return modifyFortuneLevel.apply(slotContext, lootContext, stack);
                 }
                 return ICurioItem.super.getFortuneLevel(slotContext, lootContext, stack);
             }
 
             @Override
             public int getLootingLevel(SlotContext slotContext, DamageSource source, LivingEntity target, int baseLooting, ItemStack stack) {
-                if (lootingLevel != null) {
-                    return lootingLevel.apply(slotContext, source, target, baseLooting, stack);
+                if (modifyLootingLevel != null) {
+                    return modifyLootingLevel.apply(slotContext, source, target, baseLooting, stack);
                 }
                 return ICurioItem.super.getLootingLevel(slotContext, source, target, baseLooting, stack);
             }
