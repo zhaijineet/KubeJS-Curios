@@ -37,7 +37,7 @@ public interface KubeJSCuriosHelper {
     }
 
     default ICuriosItemHandler getCuriosInventory() {
-        return CuriosApi.getCuriosInventory((LivingEntity) this).orElseThrow(()->new IllegalStateException("curios inventory not present : KubeJSCuriosHelper"));
+        return CuriosApi.getCuriosInventory((LivingEntity) this).orElseThrow(() -> new IllegalStateException("curios inventory not present : KubeJSCuriosHelper"));
     }
 
     default Map<String, ICurioStacksHandler> getAllCurios() {

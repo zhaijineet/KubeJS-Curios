@@ -7,6 +7,7 @@ import dev.latvian.mods.kubejs.item.ItemModificationKubeEvent;
 import dev.latvian.mods.rhino.util.HideFromJS;
 import net.minecraft.core.Holder;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.ai.attributes.Attribute;
@@ -15,6 +16,7 @@ import net.minecraft.world.entity.monster.EnderMan;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.storage.loot.LootContext;
+import net.neoforged.neoforge.registries.DeferredHolder;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import top.theillusivec4.curios.api.CuriosApi;
@@ -37,7 +39,8 @@ public class CapabilityCurios {
     private BiPredicate<SlotContext,ItemStack> canEquip;
     private BiPredicate<SlotContext,ItemStack> canUnequip;
     private SlotsTooltipFunction slotsTooltip;
-    private final Multimap<Holder<Attribute>, AttributeModifier> modifiers = HashMultimap.create();
+    private final Multimap<ResourceKey<Attribute>, AttributeModifier> modifiers = HashMultimap.create();
+    private final Multimap<Holder<Attribute>, AttributeModifier> attributes = HashMultimap.create();
     private Consumer<AttributeModificationContext> modifyAttribute;
     private BiConsumer<SlotContext, ItemStack> onEquipFromUse;
     private BiFunction<SlotContext, ItemStack, ICurio.SoundInfo> modifyEquipSound;
@@ -115,7 +118,7 @@ public class CapabilityCurios {
         return this;
     }
 
-    public CapabilityCurios addAttribute(Holder<Attribute> attribute, ResourceLocation identifier, double amount, AttributeModifier.Operation operation) {
+    public CapabilityCurios addAttribute(ResourceKey<Attribute> attribute, ResourceLocation identifier, double amount, AttributeModifier.Operation operation) {
         this.modifiers.put(attribute, new AttributeModifier(identifier, amount, operation));
         return this;
     }
@@ -231,14 +234,17 @@ public class CapabilityCurios {
 
             @Override
             public Multimap<Holder<Attribute>, AttributeModifier> getAttributeModifiers(SlotContext slotContext, ResourceLocation identifier, ItemStack stack) {
-                Multimap<Holder<Attribute>, AttributeModifier> tempModifiers = HashMultimap.create(modifiers);
+                if(!modifiers.isEmpty()){
+                    for (Map.Entry<ResourceKey<Attribute>, AttributeModifier> entry : modifiers.entries()) {
+                        ResourceKey<Attribute> key = entry.getKey();
+                        AttributeModifier value = entry.getValue();
+                        attributes.put(DeferredHolder.create(key), value);
+                    }
+                }
                 if (modifyAttribute != null) {
-                    modifyAttribute.accept(new AttributeModificationContext(slotContext, identifier, stack, tempModifiers));
+                    modifyAttribute.accept(new AttributeModificationContext(slotContext, identifier, stack, attributes));
                 }
-                if (!tempModifiers.isEmpty()) {
-                    return tempModifiers;
-                }
-                return ICurioItem.super.getAttributeModifiers(slotContext, identifier, stack);
+                return attributes;
             }
 
             @Override
