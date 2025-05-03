@@ -39,6 +39,7 @@ public class CapabilityCurios {
     private BiFunction<List<Component>, ItemStack, List<Component>> slotsTooltip;
     private final Multimap<ResourceLocation, AttributeModifier> modifiers = HashMultimap.create();
     private final Multimap<Attribute, AttributeModifier> attributes = HashMultimap.create();
+    private boolean attributeInit = false;
     private Consumer<AttributeModificationContext> modifyAttribute;
     private BiConsumer<SlotContext, ItemStack> onEquipFromUse;
     private BiFunction<SlotContext, ItemStack, ICurio.SoundInfo> modifyEquipSound;
@@ -222,15 +223,18 @@ public class CapabilityCurios {
 
             @Override
             public Multimap<Attribute, AttributeModifier> getAttributeModifiers(SlotContext slotContext, UUID uuid, ItemStack stack) {
-                if (!modifiers.isEmpty()) {
+                if (!attributeInit) {
                     for (Map.Entry<ResourceLocation, AttributeModifier> entry : modifiers.entries()) {
                         ResourceLocation key = entry.getKey();
                         AttributeModifier value = entry.getValue();
                         attributes.put(RegistryInfo.ATTRIBUTE.getValue(key), value);
                     }
+                    attributeInit = true;
                 }
                 if (modifyAttribute != null) {
-                    modifyAttribute.accept(new AttributeModificationContext(slotContext, uuid, stack, attributes));
+                    Multimap<Attribute, AttributeModifier> tempAttributes = HashMultimap.create(attributes);
+                    modifyAttribute.accept(new AttributeModificationContext(slotContext, uuid, stack, tempAttributes));
+                    return tempAttributes;
                 }
                 return attributes;
             }
