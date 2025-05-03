@@ -3,8 +3,10 @@ package net.zhaiji.kubejscurios.curios;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import dev.latvian.mods.kubejs.item.ItemBuilder;
+import dev.latvian.mods.kubejs.registry.RegistryInfo;
 import dev.latvian.mods.rhino.util.HideFromJS;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attribute;
@@ -35,7 +37,8 @@ public class CapabilityCurios {
     private BiPredicate<SlotContext,ItemStack> canEquip;
     private BiPredicate<SlotContext,ItemStack> canUnequip;
     private BiFunction<List<Component>, ItemStack, List<Component>> slotsTooltip;
-    private final Multimap<Attribute, AttributeModifier> modifiers = HashMultimap.create();
+    private final Multimap<ResourceLocation, AttributeModifier> modifiers = HashMultimap.create();
+    private final Multimap<Attribute, AttributeModifier> attributes = HashMultimap.create();
     private Consumer<AttributeModificationContext> modifyAttribute;
     private BiConsumer<SlotContext, ItemStack> onEquipFromUse;
     private BiFunction<SlotContext, ItemStack, ICurio.SoundInfo> modifyEquipSound;
@@ -103,7 +106,7 @@ public class CapabilityCurios {
         return this;
     }
 
-    public CapabilityCurios addAttribute(Attribute attribute, String identifier, double amount, AttributeModifier.Operation operation) {
+    public CapabilityCurios addAttribute(ResourceLocation attribute, String identifier, double amount, AttributeModifier.Operation operation) {
         this.modifiers.put(attribute, new AttributeModifier(new UUID(identifier.hashCode(), identifier.hashCode()), identifier, amount, operation));
         return this;
     }
@@ -219,14 +222,17 @@ public class CapabilityCurios {
 
             @Override
             public Multimap<Attribute, AttributeModifier> getAttributeModifiers(SlotContext slotContext, UUID uuid, ItemStack stack) {
-                Multimap<Attribute, AttributeModifier> tempModifiers = HashMultimap.create(modifiers);
+                if (!modifiers.isEmpty()) {
+                    for (Map.Entry<ResourceLocation, AttributeModifier> entry : modifiers.entries()) {
+                        ResourceLocation key = entry.getKey();
+                        AttributeModifier value = entry.getValue();
+                        attributes.put(RegistryInfo.ATTRIBUTE.getValue(key), value);
+                    }
+                }
                 if (modifyAttribute != null) {
-                    modifyAttribute.accept(new AttributeModificationContext(slotContext, uuid, stack, tempModifiers));
+                    modifyAttribute.accept(new AttributeModificationContext(slotContext, uuid, stack, attributes));
                 }
-                if (!tempModifiers.isEmpty()) {
-                    return tempModifiers;
-                }
-                return ICurioItem.super.getAttributeModifiers(slotContext, uuid, stack);
+                return attributes;
             }
 
             @Override
