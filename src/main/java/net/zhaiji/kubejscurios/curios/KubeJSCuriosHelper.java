@@ -94,7 +94,15 @@ public interface KubeJSCuriosHelper {
     }
 
     default void addCuriosSlotModifier(String slot, UUID uuid, String identifier, double amount, AttributeModifier.Operation operation) {
+        this.getCuriosInventory().addPermanentSlotModifier(slot, uuid, identifier, amount, operation);
+    }
+
+    default void addCuriosSlotModifier(String slot, String identifier, double amount, AttributeModifier.Operation operation) {
         this.getCuriosInventory().addPermanentSlotModifier(slot, new UUID(identifier.hashCode(), identifier.hashCode()), identifier, amount, operation);
+    }
+
+    default void removeCuriosSlotModifier(String slot, UUID uuid) {
+        this.getCuriosInventory().removeSlotModifier(slot, uuid);
     }
 
     default void removeCuriosSlotModifier(String slot, String identifier) {
