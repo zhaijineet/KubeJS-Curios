@@ -36,8 +36,8 @@ public class CapabilityCurios {
     private BiConsumer<SlotContext,ItemStack> curioTick;
     private EquipConsumer onEquip;
     private EquipConsumer onUnequip;
-    private BiPredicate<SlotContext,ItemStack> canEquip;
-    private BiPredicate<SlotContext,ItemStack> canUnequip;
+    private BiPredicate<SlotContext, ItemStack> canEquip;
+    private BiPredicate<SlotContext, ItemStack> canUnequip;
     private SlotsTooltipFunction slotsTooltip;
     private final Multimap<ResourceKey<Attribute>, AttributeModifier> modifiers = HashMultimap.create();
     private final Multimap<Holder<Attribute>, AttributeModifier> attributes = HashMultimap.create();
@@ -180,7 +180,7 @@ public class CapabilityCurios {
     }
 
     @HideFromJS
-    public ICurioItem getCapability(){
+    public ICurioItem getCapability() {
         return new ICurioItem() {
             @Override
             public void curioTick(SlotContext slotContext, ItemStack stack) {
@@ -235,7 +235,7 @@ public class CapabilityCurios {
 
             @Override
             public Multimap<Holder<Attribute>, AttributeModifier> getAttributeModifiers(SlotContext slotContext, ResourceLocation identifier, ItemStack stack) {
-                if(!attributeInit){
+                if (!attributeInit) {
                     for (Map.Entry<ResourceKey<Attribute>, AttributeModifier> entry : modifiers.entries()) {
                         ResourceKey<Attribute> key = entry.getKey();
                         AttributeModifier value = entry.getValue();
