@@ -34,8 +34,8 @@ public class CapabilityCurios {
     private BiConsumer<SlotContext,ItemStack> curioTick;
     private EquipConsumer onEquip;
     private EquipConsumer onUnequip;
-    private BiPredicate<SlotContext,ItemStack> canEquip;
-    private BiPredicate<SlotContext,ItemStack> canUnequip;
+    private BiPredicate<SlotContext, ItemStack> canEquip;
+    private BiPredicate<SlotContext, ItemStack> canUnequip;
     private BiFunction<List<Component>, ItemStack, List<Component>> slotsTooltip;
     private final Multimap<ResourceLocation, AttributeModifier> modifiers = HashMultimap.create();
     private final Multimap<Attribute, AttributeModifier> attributes = HashMultimap.create();
@@ -168,7 +168,7 @@ public class CapabilityCurios {
     }
 
     @HideFromJS
-    public ICurioItem getCapability(){
+    public ICurioItem getCapability() {
         return new ICurioItem() {
             @Override
             public void curioTick(SlotContext slotContext, ItemStack stack) {
@@ -325,26 +325,10 @@ public class CapabilityCurios {
     }
 
     public static class AttributeModificationContext {
-        private final SlotContext slotContext;
-        private final UUID uuid;
-        private final ItemStack stack;
-        private final Multimap<Attribute, AttributeModifier> modifiers;
-
-        public SlotContext getSlotContext() {
-            return slotContext;
-        }
-
-        public UUID getUUID() {
-            return uuid;
-        }
-
-        public ItemStack getStack() {
-            return stack;
-        }
-
-        public Multimap<Attribute, AttributeModifier> getModifiers() {
-            return modifiers;
-        }
+        public final SlotContext slotContext;
+        public final UUID uuid;
+        public final ItemStack stack;
+        public final Multimap<Attribute, AttributeModifier> modifiers;
 
         public AttributeModificationContext(SlotContext slotContext, UUID uuid, ItemStack stack, Multimap<Attribute, AttributeModifier> modifiers) {
             this.slotContext = slotContext;
@@ -355,6 +339,11 @@ public class CapabilityCurios {
 
         public AttributeModificationContext modify(Attribute attribute, String identifier, double amount, AttributeModifier.Operation operation) {
             this.modifiers.put(attribute, new AttributeModifier(new UUID(identifier.hashCode(), identifier.hashCode()), identifier, amount, operation));
+            return this;
+        }
+
+        public AttributeModificationContext modify(Attribute attribute,UUID uuid ,String identifier, double amount, AttributeModifier.Operation operation) {
+            this.modifiers.put(attribute, new AttributeModifier(uuid, identifier, amount, operation));
             return this;
         }
 
