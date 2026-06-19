@@ -36,7 +36,3 @@ side = "BOTH"
 
 [[dependencies."${mod_id}"]]
 modId = "curios"
-type = "required"
-versionRange = ""
-ordering = "NONE"
-side = "BOTH"
