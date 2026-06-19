@@ -108,7 +108,7 @@ public class CapabilityCurios {
     }
 
     public CapabilityCurios addAttribute(ResourceLocation attribute, String identifier, double amount, AttributeModifier.Operation operation) {
-        this.modifiers.put(attribute, new AttributeModifier(new UUID(identifier.hashCode(), identifier.hashCode()), identifier, amount, operation));
+        this.modifiers.put(attribute, new AttributeModifier(identifier, amount, operation));
         return this;
     }
 
@@ -227,7 +227,8 @@ public class CapabilityCurios {
                     for (Map.Entry<ResourceLocation, AttributeModifier> entry : modifiers.entries()) {
                         ResourceLocation key = entry.getKey();
                         AttributeModifier value = entry.getValue();
-                        attributes.put(RegistryInfo.ATTRIBUTE.getValue(key), value);
+                        AttributeModifier newValue = new AttributeModifier(CuriosApi.getSlotUuid(slotContext), value.getName(), value.getAmount(), value.getOperation());
+                        attributes.put(RegistryInfo.ATTRIBUTE.getValue(key), newValue);
                     }
                     attributeInit = true;
                 }
@@ -338,11 +339,11 @@ public class CapabilityCurios {
         }
 
         public AttributeModificationContext modify(Attribute attribute, String identifier, double amount, AttributeModifier.Operation operation) {
-            this.modifiers.put(attribute, new AttributeModifier(new UUID(identifier.hashCode(), identifier.hashCode()), identifier, amount, operation));
+            this.modifiers.put(attribute, new AttributeModifier(this.uuid, identifier, amount, operation));
             return this;
         }
 
-        public AttributeModificationContext modify(Attribute attribute,UUID uuid ,String identifier, double amount, AttributeModifier.Operation operation) {
+        public AttributeModificationContext modify(Attribute attribute, UUID uuid ,String identifier, double amount, AttributeModifier.Operation operation) {
             this.modifiers.put(attribute, new AttributeModifier(uuid, identifier, amount, operation));
             return this;
         }
